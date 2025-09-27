@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3 uid="uid://dfhvbejk6u7pb"]
+
+[ext_resource type="Script" uid="uid://difog3n6sbkco" path="res://node_3d.gd" id="1_a202f"]
+[ext_resource type="Texture2D" uid="uid://dmui5h4sgona5" path="res://assets/backgrounds/graveyard.jpg" id="2_graveyard"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_background"]
+size = Vector2(40, 30)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_background"]
+albedo_texture = ExtResource("2_graveyard")
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_a202f")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.718111, 7.23304)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 14.0662, 5.59349)
+light_color = Color(0.941224, 0.904753, 0.916239, 1)
+light_energy = 10.0
+light_size = 100.0
+distance_fade_enabled = true
+omni_range = 78.2751
+
+[node name="Background" type="MeshInstance3D" parent="."]
+transform = Transform3D(3.14733, 1.3805e-14, -1.64568e-21, -1.33295e-21, -8.49259e-08, -2.65813, 0, 1.94288, -1.16191e-07, 0.0786285, -1.90735e-06, -31.2496)
+mesh = SubResource("PlaneMesh_background")
+surface_material_override/0 = SubResource("StandardMaterial3D_background")
+
+[node name="ThunderAudio" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+volume_db = 5.0
+max_distance = 50.0
