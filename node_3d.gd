@@ -30,6 +30,10 @@ var pumpkin_left_scene: PackedScene
 var pumpkin_right_scene: PackedScene
 var camera: Camera3D
 
+# Skull spawning variables
+var skull_scene: PackedScene
+var skull_spawn_timer: Timer
+
 
 func _ready():
 	# Load the pumpkin scene
@@ -51,6 +55,9 @@ func _ready():
 	pumpkin_left_scene = load("res://assets/models/firstpumpkinleft.blend")
 	pumpkin_right_scene = load("res://assets/models/firstpumpkinright.blend")
 	
+	# Load skull scene
+	skull_scene = load("res://assets/models/Skull.blend")
+	
 	# Get camera reference for mouse picking
 	camera = get_node("Camera3D")
 	
@@ -60,6 +67,13 @@ func _ready():
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 	spawn_timer.autostart = true
 	add_child(spawn_timer)
+	
+	# Create and configure the skull spawn timer
+	skull_spawn_timer = Timer.new()
+	skull_spawn_timer.wait_time = randf_range(5.0, 10.0)  # Random 5-10 seconds
+	skull_spawn_timer.timeout.connect(_on_skull_spawn_timer_timeout)
+	skull_spawn_timer.autostart = true
+	add_child(skull_spawn_timer)
 	
 	# Create and configure the lightning timer
 	lightning_timer = Timer.new()
@@ -82,6 +96,11 @@ func _process(delta):
 
 func _on_spawn_timer_timeout():
 	spawn_pumpkin()
+
+func _on_skull_spawn_timer_timeout():
+	spawn_skull()
+	# Set next random interval
+	skull_spawn_timer.wait_time = randf_range(5.0, 10.0)
 
 func spawn_pumpkin():
 	if pumpkin_scene == null:
@@ -115,9 +134,9 @@ func spawn_pumpkin():
 	
 	# Add collision shape to the pumpkin
 	var collision_shape = CollisionShape3D.new()
-	var box_shape = BoxShape3D.new()
-	box_shape.size = Vector3(1.0, 1.0, 1.0)  # Adjust size to match your pumpkin
-	collision_shape.shape = box_shape
+	var sphere_shape = SphereShape3D.new()
+	sphere_shape.radius = 1.0 # Adjust size to match your pumpkin
+	collision_shape.shape = sphere_shape
 	pumpkin_body.add_child(collision_shape)
 	
 	# Configure physics properties
@@ -148,15 +167,86 @@ func spawn_pumpkin():
 	
 	print("Spawned pumpkin at position: ", spawn_position, " with velocity: ", initial_velocity)
 
+func spawn_skull():
+	if skull_scene == null:
+		print("Skull scene not loaded!")
+		return
+	
+	# Create a RigidBody3D to hold the skull
+	var skull_body = RigidBody3D.new()
+	
+	# Create a new skull instance
+	var skull_instance = skull_scene.instantiate()
+	
+	# Generate random position within spawn area
+	var random_x = randf_range(spawn_area_min.x, spawn_area_max.x)
+	var random_z = randf_range(spawn_area_min.z, spawn_area_max.z)
+	var spawn_position = Vector3(random_x, spawn_area_min.y, random_z)
+	
+	# Set the skull position
+	skull_body.position = spawn_position
+	
+	# Add some random rotation for variety
+	var random_rotation = Vector3(
+		randf_range(0, 1 * PI),
+		randf_range(0, 1 * PI),
+		randf_range(0, 1 * PI)
+	)
+	skull_body.rotation = random_rotation
+	
+	# Add the skull model as a child of the RigidBody3D
+	skull_body.add_child(skull_instance)
+	
+	# Scale the skull to be 5 times bigger
+	skull_instance.scale = Vector3(10.0, 10.0, 10.0)
+	
+	# Add collision shape to the skull (scaled to match the larger skull)
+	var collision_shape = CollisionShape3D.new()
+	var sphere_shape = SphereShape3D.new()
+	sphere_shape.radius = 1.0 # Scaled up to match the 5x larger skull
+	collision_shape.shape = sphere_shape
+	skull_body.add_child(collision_shape)
+	
+	# Configure physics properties
+	skull_body.mass = 1.0  # Mass of the skull
+	skull_body.gravity_scale = 1.0  # Affected by gravity
+	
+	# Add upward velocity with some randomness
+	var upward_force = randf_range(10.0, 15.0)  # Random upward velocity
+	var horizontal_force_x = randf_range(-2.0, 2.0)  # Random horizontal velocity
+	var horizontal_force_z = randf_range(-2.0, 2.0)  # Random horizontal velocity
+	
+	var initial_velocity = Vector3(horizontal_force_x, upward_force, horizontal_force_z)
+	skull_body.linear_velocity = initial_velocity
+	
+	# Add some random angular velocity for spinning
+	var angular_velocity = Vector3(
+		randf_range(-5.0, 5.0),
+		randf_range(-5.0, 5.0),
+		randf_range(-5.0, 5.0)
+	)
+	skull_body.angular_velocity = angular_velocity
+	
+	# Mark this as a skull (not a pumpkin)
+	skull_body.set_meta("is_skull", true)
+	
+	# Add the skull body to the scene
+	add_child(skull_body)
+	
+	print("Spawned skull at position: ", spawn_position, " with velocity: ", initial_velocity)
+
 func cleanup_fallen_pumpkins():
-	# Get all RigidBody3D children (our pumpkin bodies and parts)
+	# Get all RigidBody3D children (our pumpkin bodies, parts, and skulls)
 	var children = get_children()
 	for child in children:
 		if child is RigidBody3D:
-			# Check if the pumpkin or pumpkin part has fallen below the threshold
+			# Check if the pumpkin, pumpkin part, or skull has fallen below the threshold
 			if child.position.y < cleanup_threshold:
-				print("Removing fallen pumpkin/part at position: ", child.position)
-				child.queue_free()  # Remove the pumpkin/part from the scene
+				if child.has_meta("is_skull"):
+					print("Removing fallen skull at position: ", child.position)
+				else:
+					print("Removing fallen pumpkin/part at position: ", child.position)
+				child.queue_free()  # Remove the object from the scene
 
 func _on_lightning_timer_timeout():
 	if not lightning_active:
@@ -255,10 +345,12 @@ func handle_mouse_click():
 		if hit_object is RigidBody3D and hit_object.has_meta("is_original_pumpkin"):
 			print("Hit original pumpkin! Splitting...")
 			split_pumpkin(hit_object, result.position)
+		elif hit_object is RigidBody3D and hit_object.has_meta("is_skull"):
+			print("Hit skull - skulls don't split!")
 		elif hit_object is RigidBody3D:
 			print("Hit pumpkin part, not splitting")
 		else:
-			print("Hit something else, not a pumpkin")
+			print("Hit something else, not a pumpkin or skull")
 	else:
 		print("No hit detected")
 
