@@ -34,6 +34,18 @@ var camera: Camera3D
 var skull_scene: PackedScene
 var skull_spawn_timer: Timer
 
+# Game state variables
+var game_started = false
+var score = 0
+var score_goal = 100
+var level = 1
+
+# UI references
+var game_start_button: Button
+var score_label: Label
+var score_goal_label: Label
+var level_label: Label
+
 
 func _ready():
 	# Load the pumpkin scene
@@ -61,18 +73,30 @@ func _ready():
 	# Get camera reference for mouse picking
 	camera = get_node("Camera3D")
 	
-	# Create and configure the spawn timer
+	# Get UI references
+	game_start_button = get_node("UI/GameStartButton")
+	score_label = get_node("UI/ScoreLabel")
+	score_goal_label = get_node("UI/ScoreGoalLabel")
+	level_label = get_node("UI/LevelLabel")
+	
+	# Connect the game start button
+	game_start_button.pressed.connect(_on_game_start_button_pressed)
+	
+	# Initialize UI
+	update_ui()
+	
+	# Create and configure the spawn timer (don't start until game begins)
 	spawn_timer = Timer.new()
 	spawn_timer.wait_time = 5.0  # 5 seconds
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
-	spawn_timer.autostart = true
+	spawn_timer.autostart = false  # Don't start until game begins
 	add_child(spawn_timer)
 	
-	# Create and configure the skull spawn timer
+	# Create and configure the skull spawn timer (don't start until game begins)
 	skull_spawn_timer = Timer.new()
 	skull_spawn_timer.wait_time = randf_range(5.0, 10.0)  # Random 5-10 seconds
 	skull_spawn_timer.timeout.connect(_on_skull_spawn_timer_timeout)
-	skull_spawn_timer.autostart = true
+	skull_spawn_timer.autostart = false  # Don't start until game begins
 	add_child(skull_spawn_timer)
 	
 	# Create and configure the lightning timer
@@ -82,8 +106,7 @@ func _ready():
 	lightning_timer.autostart = true
 	add_child(lightning_timer)
 	
-	# Spawn the first pumpkin immediately
-	spawn_pumpkin()
+	# Don't spawn anything until game starts
 
 func _process(delta):
 	# Clean up pumpkins that have fallen below the threshold
@@ -101,6 +124,48 @@ func _on_skull_spawn_timer_timeout():
 	spawn_skull()
 	# Set next random interval
 	skull_spawn_timer.wait_time = randf_range(5.0, 10.0)
+
+func _on_game_start_button_pressed():
+	if not game_started:
+		start_game()
+
+func start_game():
+	game_started = true
+	game_start_button.visible = false  # Hide the start button
+	
+	# Start the spawn timers
+	spawn_timer.start()
+	skull_spawn_timer.start()
+	
+	# Spawn the first pumpkin immediately
+	spawn_pumpkin()
+	
+	print("Game started!")
+
+func update_ui():
+	score_label.text = "Score: " + str(score)
+	score_goal_label.text = "Score Goal: " + str(score_goal)
+	level_label.text = "Level: " + str(level)
+
+func add_score(points: int):
+	score += points
+	update_ui()
+	
+	# Check if score goal is reached
+	if score >= score_goal:
+		level_up()
+
+func level_up():
+	level += 1
+	score_goal += 50  # Increase goal by 50 each level
+	score = 0  # Reset score for new level
+	update_ui()
+	
+	# Increase spawn rate slightly for higher levels
+	spawn_timer.wait_time = max(2.0, spawn_timer.wait_time - 0.5)
+	skull_spawn_timer.wait_time = max(3.0, skull_spawn_timer.wait_time - 0.5)
+	
+	print("Level up! Now on level " + str(level))
 
 func spawn_pumpkin():
 	if pumpkin_scene == null:
@@ -344,9 +409,11 @@ func handle_mouse_click():
 		# Check if we hit an original pumpkin (RigidBody3D with the meta tag)
 		if hit_object is RigidBody3D and hit_object.has_meta("is_original_pumpkin"):
 			print("Hit original pumpkin! Splitting...")
+			add_score(10)  # +10 points for hitting a pumpkin
 			split_pumpkin(hit_object, result.position)
 		elif hit_object is RigidBody3D and hit_object.has_meta("is_skull"):
 			print("Hit skull - skulls don't split!")
+			add_score(-5)  # -5 points for hitting a skull
 		elif hit_object is RigidBody3D:
 			print("Hit pumpkin part, not splitting")
 		else:
