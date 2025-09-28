@@ -39,12 +39,18 @@ var game_started = false
 var score = 0
 var score_goal = 100
 var level = 1
+var time_remaining = 60.0
 
 # UI references
 var game_start_button: Button
 var score_label: Label
 var score_goal_label: Label
 var level_label: Label
+var timer_label: Label
+var game_over_label: Label
+
+# Timer variables
+var game_timer: Timer
 
 
 func _ready():
@@ -78,6 +84,8 @@ func _ready():
 	score_label = get_node("UI/ScoreLabel")
 	score_goal_label = get_node("UI/ScoreGoalLabel")
 	level_label = get_node("UI/LevelLabel")
+	timer_label = get_node("UI/TimerLabel")
+	game_over_label = get_node("UI/GameOverLabel")
 	
 	# Connect the game start button
 	game_start_button.pressed.connect(_on_game_start_button_pressed)
@@ -106,6 +114,13 @@ func _ready():
 	lightning_timer.autostart = true
 	add_child(lightning_timer)
 	
+	# Create and configure the game timer (for countdown)
+	game_timer = Timer.new()
+	game_timer.wait_time = 1.0  # Update every second
+	game_timer.timeout.connect(_on_game_timer_timeout)
+	game_timer.autostart = false  # Don't start until game begins
+	add_child(game_timer)
+	
 	# Don't spawn anything until game starts
 
 func _process(delta):
@@ -125,6 +140,14 @@ func _on_skull_spawn_timer_timeout():
 	# Set next random interval
 	skull_spawn_timer.wait_time = randf_range(5.0, 10.0)
 
+func _on_game_timer_timeout():
+	if game_started:
+		time_remaining -= 1.0
+		update_ui()
+		
+		if time_remaining <= 0:
+			game_over()
+
 func _on_game_start_button_pressed():
 	if not game_started:
 		start_game()
@@ -132,10 +155,16 @@ func _on_game_start_button_pressed():
 func start_game():
 	game_started = true
 	game_start_button.visible = false  # Hide the start button
+	game_over_label.visible = false  # Hide game over label
+	
+	# Reset timer
+	time_remaining = 60.0
+	update_ui()
 	
 	# Start the spawn timers
 	spawn_timer.start()
 	skull_spawn_timer.start()
+	game_timer.start()  # Start the countdown timer
 	
 	# Spawn the first pumpkin immediately
 	spawn_pumpkin()
@@ -146,6 +175,7 @@ func update_ui():
 	score_label.text = "Score: " + str(score)
 	score_goal_label.text = "Score Goal: " + str(score_goal)
 	level_label.text = "Level: " + str(level)
+	timer_label.text = "Time: " + str(int(time_remaining))
 
 func add_score(points: int):
 	score += points
@@ -159,6 +189,7 @@ func level_up():
 	level += 1
 	score_goal += 50  # Increase goal by 50 each level
 	score = 0  # Reset score for new level
+	time_remaining = 60.0  # Reset timer to 60 seconds
 	update_ui()
 	
 	# Increase spawn rate slightly for higher levels
@@ -166,6 +197,41 @@ func level_up():
 	skull_spawn_timer.wait_time = max(3.0, skull_spawn_timer.wait_time - 0.5)
 	
 	print("Level up! Now on level " + str(level))
+
+func game_over():
+	game_started = false
+	
+	# Stop all timers
+	spawn_timer.stop()
+	skull_spawn_timer.stop()
+	game_timer.stop()
+	
+	# Show game over message
+	game_over_label.visible = true
+	
+	# Clear all spawned objects
+	clear_all_objects()
+	
+	print("Game Over!")
+	
+	# Wait 5 seconds then show start button again
+	await get_tree().create_timer(5.0).timeout
+	game_over_label.visible = false
+	game_start_button.visible = true
+	
+	# Reset game state
+	score = 0
+	level = 1
+	score_goal = 100
+	time_remaining = 60.0
+	update_ui()
+
+func clear_all_objects():
+	# Remove all RigidBody3D children (pumpkins, skulls, and parts)
+	var children = get_children()
+	for child in children:
+		if child is RigidBody3D:
+			child.queue_free()
 
 func spawn_pumpkin():
 	if pumpkin_scene == null:
