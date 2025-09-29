@@ -23,6 +23,13 @@ var lightning_active = false
 var thunder_audio: AudioStreamPlayer3D
 var thunder_sounds: Array[AudioStream] = []
 
+# Background music
+var background_music: AudioStreamPlayer
+
+# Sound effects
+var clang_audio: AudioStreamPlayer
+var woosh_audio: AudioStreamPlayer
+
 # Pumpkin splitting variables
 var pumpkin_bottom_scene: PackedScene
 var pumpkin_top_scene: PackedScene
@@ -48,6 +55,7 @@ var score_goal_label: Label
 var level_label: Label
 var timer_label: Label
 var game_over_label: Label
+var skull_penalty_label: Label
 
 # Timer variables
 var game_timer: Timer
@@ -64,8 +72,24 @@ func _ready():
 	# Get reference to the thunder audio player
 	thunder_audio = get_node("ThunderAudio")
 	
+	# Get reference to the background music player
+	background_music = get_node("BackgroundMusic")
+	
+	# Get reference to the clang audio player
+	clang_audio = get_node("ClangAudio")
+	
+	# Get reference to the woosh audio player
+	woosh_audio = get_node("WooshAudio")
+	
 	# Load all thunder sound files
 	load_thunder_sounds()
+	
+	# Load and setup background music
+	setup_background_music()
+	
+	# Load sound effects
+	setup_clang_sound()
+	setup_woosh_sound()
 	
 	# Load pumpkin part scenes
 	pumpkin_bottom_scene = load("res://assets/models/firstpumpkinbottom.blend")
@@ -86,6 +110,7 @@ func _ready():
 	level_label = get_node("UI/LevelLabel")
 	timer_label = get_node("UI/TimerLabel")
 	game_over_label = get_node("UI/GameOverLabel")
+	skull_penalty_label = get_node("UI/SkullPenaltyLabel")
 	
 	# Connect the game start button
 	game_start_button.pressed.connect(_on_game_start_button_pressed)
@@ -95,7 +120,7 @@ func _ready():
 	
 	# Create and configure the spawn timer (don't start until game begins)
 	spawn_timer = Timer.new()
-	spawn_timer.wait_time = 5.0  # 5 seconds
+	spawn_timer.wait_time = 2.5  # 2.5 seconds (doubled frequency)
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 	spawn_timer.autostart = false  # Don't start until game begins
 	add_child(spawn_timer)
@@ -156,6 +181,7 @@ func start_game():
 	game_started = true
 	game_start_button.visible = false  # Hide the start button
 	game_over_label.visible = false  # Hide game over label
+	skull_penalty_label.visible = false  # Hide penalty label
 	
 	# Reset timer
 	time_remaining = 60.0
@@ -187,16 +213,25 @@ func add_score(points: int):
 
 func level_up():
 	level += 1
-	score_goal += 50  # Increase goal by 50 each level
-	score = 0  # Reset score for new level
+	score_goal += (level+1) * 50  # Increase goal each level
+	# Keep current score - don't reset to 0
 	time_remaining = 60.0  # Reset timer to 60 seconds
 	update_ui()
 	
 	# Increase spawn rate slightly for higher levels
-	spawn_timer.wait_time = max(2.0, spawn_timer.wait_time - 0.5)
-	skull_spawn_timer.wait_time = max(3.0, skull_spawn_timer.wait_time - 0.5)
+	spawn_timer.wait_time = max(1.0, spawn_timer.wait_time - 0.25)  # Faster pumpkin spawning
+	skull_spawn_timer.wait_time = max(2.0, skull_spawn_timer.wait_time * 0.5)  # 50% faster skull spawning
 	
-	print("Level up! Now on level " + str(level))
+	print("Level up! Now on level " + str(level) + " - Score goal increased to " + str(score_goal))
+
+func show_skull_penalty(world_position: Vector3):
+	# Convert 3D world position to 2D screen position
+	var screen_pos = camera.unproject_position(world_position)
+	skull_penalty_label.position = screen_pos
+	skull_penalty_label.visible = true
+	# Hide the penalty after 1 second
+	await get_tree().create_timer(1.0).timeout
+	skull_penalty_label.visible = false
 
 func game_over():
 	game_started = false
@@ -208,6 +243,7 @@ func game_over():
 	
 	# Show game over message
 	game_over_label.visible = true
+	skull_penalty_label.visible = false  # Hide penalty label
 	
 	# Clear all spawned objects
 	clear_all_objects()
@@ -358,8 +394,9 @@ func spawn_skull():
 	)
 	skull_body.angular_velocity = angular_velocity
 	
-	# Mark this as a skull (not a pumpkin)
+	# Mark this as a skull (not a pumpkin) and track if it's been hit
 	skull_body.set_meta("is_skull", true)
+	skull_body.set_meta("has_been_hit", false)
 	
 	# Add the skull body to the scene
 	add_child(skull_body)
@@ -456,6 +493,50 @@ func play_thunder_sound():
 	else:
 		print("No thunder sound files available!")
 
+func setup_background_music():
+	# Load the crickets sound file
+	var crickets_sound = load("res://sounds/crickets.mp3")
+	if crickets_sound != null:
+		background_music.stream = crickets_sound
+		background_music.volume_db = 5.0  # Set volume lower for background
+		background_music.autoplay = true
+		background_music.play()
+		print("Background music loaded and playing")
+	else:
+		print("Could not load crickets.m4a background music")
+
+func setup_clang_sound():
+	# Load the clang sound file
+	var clang_sound = load("res://sounds/clang.mp3")
+	if clang_sound != null:
+		clang_audio.stream = clang_sound
+		clang_audio.volume_db = 0.0
+		print("Clang sound effect loaded")
+	else:
+		print("Could not load clang.mp3 sound effect")
+
+func setup_woosh_sound():
+	# Load the woosh sound file
+	var woosh_sound = load("res://sounds/woosh.wav")
+	if woosh_sound != null:
+		woosh_audio.stream = woosh_sound
+		woosh_audio.volume_db = 0.0
+		print("Woosh sound effect loaded")
+	else:
+		print("Could not load woosh.wav sound effect")
+
+func play_clang_sound():
+	if clang_audio.stream != null:
+		# Add random pitch variation
+		clang_audio.pitch_scale = randf_range(0.8, 1.2)
+		clang_audio.play()
+
+func play_woosh_sound():
+	if woosh_audio.stream != null:
+		# Add random pitch variation
+		woosh_audio.pitch_scale = randf_range(0.7, 1.3)
+		woosh_audio.play()
+
 func handle_mouse_click():
 	# Get mouse position
 	var mouse_pos = get_viewport().get_mouse_position()
@@ -476,10 +557,19 @@ func handle_mouse_click():
 		if hit_object is RigidBody3D and hit_object.has_meta("is_original_pumpkin"):
 			print("Hit original pumpkin! Splitting...")
 			add_score(10)  # +10 points for hitting a pumpkin
+			play_woosh_sound()  # Play woosh sound effect
 			split_pumpkin(hit_object, result.position)
 		elif hit_object is RigidBody3D and hit_object.has_meta("is_skull"):
-			print("Hit skull - skulls don't split!")
-			add_score(-5)  # -5 points for hitting a skull
+			if not hit_object.has_meta("has_been_hit") or not hit_object.get_meta("has_been_hit"):
+				print("Hit skull - skulls don't split!")
+				add_score(-5)  # -5 points for hitting a skull
+				hit_object.set_meta("has_been_hit", true)  # Mark as hit
+				show_skull_penalty(result.position)  # Show -10s penalty at click location
+				time_remaining = max(0, time_remaining - 10)  # Deduct 10 seconds
+				play_clang_sound()  # Play clang sound effect
+				update_ui()
+			else:
+				print("Skull already hit - no points!")
 		elif hit_object is RigidBody3D:
 			print("Hit pumpkin part, not splitting")
 		else:
