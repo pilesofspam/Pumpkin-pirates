@@ -41,6 +41,8 @@ autoplay = true
 
 [node name="WooshAudio" type="AudioStreamPlayer" parent="."]
 
+[node name="BreakAudio" type="AudioStreamPlayer" parent="."]
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="GameStartButton" type="Button" parent="UI"]

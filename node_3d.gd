@@ -29,6 +29,10 @@ var background_music: AudioStreamPlayer
 # Sound effects
 var clang_audio: AudioStreamPlayer
 var woosh_audio: AudioStreamPlayer
+var break_audio: AudioStreamPlayer
+
+# Chip spawning variables
+var chip_scene: PackedScene
 
 # Pumpkin splitting variables
 var pumpkin_bottom_scene: PackedScene
@@ -81,6 +85,9 @@ func _ready():
 	# Get reference to the woosh audio player
 	woosh_audio = get_node("WooshAudio")
 	
+	# Get reference to the break audio player
+	break_audio = get_node("BreakAudio")
+	
 	# Load all thunder sound files
 	load_thunder_sounds()
 	
@@ -90,6 +97,10 @@ func _ready():
 	# Load sound effects
 	setup_clang_sound()
 	setup_woosh_sound()
+	setup_break_sound()
+	
+	# Load chip scene
+	chip_scene = load("res://assets/models/chip.blend")
 	
 	# Load pumpkin part scenes
 	pumpkin_bottom_scene = load("res://assets/models/firstpumpkinbottom.blend")
@@ -404,14 +415,16 @@ func spawn_skull():
 	print("Spawned skull at position: ", spawn_position, " with velocity: ", initial_velocity)
 
 func cleanup_fallen_pumpkins():
-	# Get all RigidBody3D children (our pumpkin bodies, parts, and skulls)
+	# Get all RigidBody3D children (our pumpkin bodies, parts, skulls, and chips)
 	var children = get_children()
 	for child in children:
 		if child is RigidBody3D:
-			# Check if the pumpkin, pumpkin part, or skull has fallen below the threshold
+			# Check if the object has fallen below the threshold
 			if child.position.y < cleanup_threshold:
 				if child.has_meta("is_skull"):
 					print("Removing fallen skull at position: ", child.position)
+				elif child.has_meta("is_chip"):
+					print("Removing fallen chip at position: ", child.position)
 				else:
 					print("Removing fallen pumpkin/part at position: ", child.position)
 				child.queue_free()  # Remove the object from the scene
@@ -531,11 +544,95 @@ func play_clang_sound():
 		clang_audio.pitch_scale = randf_range(0.8, 1.2)
 		clang_audio.play()
 
+func setup_break_sound():
+	# Load the break sound file
+	var break_sound = load("res://sounds/break.wav")
+	if break_sound != null:
+		break_audio.stream = break_sound
+		break_audio.volume_db = 0.0
+		print("Break sound effect loaded")
+	else:
+		print("Could not load break.wav sound effect")
+
 func play_woosh_sound():
 	if woosh_audio.stream != null:
 		# Add random pitch variation
 		woosh_audio.pitch_scale = randf_range(0.7, 1.3)
 		woosh_audio.play()
+
+func play_break_sound():
+	if break_audio.stream != null:
+		# Add random pitch variation
+		break_audio.pitch_scale = randf_range(0.8, 1.2)
+		break_audio.play()
+
+
+func break_skull(skull_body: RigidBody3D, hit_position: Vector3):
+	if chip_scene == null:
+		print("Chip scene not loaded!")
+		return
+	
+	# Get the skull's current position and velocity
+	var skull_pos = skull_body.global_position
+	var skull_vel = skull_body.linear_velocity
+	var skull_ang_vel = skull_body.angular_velocity
+	
+	# Create 12 chips in a sphere pattern around the skull
+	for i in range(12):
+		# Calculate position around the skull
+		var angle = (i * 2 * PI) / 12.0  # Evenly distribute around circle
+		var radius = 1.0  # Distance from center
+		var chip_offset = Vector3(
+			cos(angle) * radius,
+			randf_range(-0.5, 0.5),  # Random height variation
+			sin(angle) * radius
+		)
+		
+		# Create chip body
+		var chip_body = RigidBody3D.new()
+		var chip_instance = chip_scene.instantiate()
+		
+		# Scale the chip to be 4 times smaller
+		chip_instance.scale = Vector3(0.15, 0.15, 0.15)
+		
+		chip_body.add_child(chip_instance)
+		
+		# Set position and physics
+		chip_body.global_position = skull_pos + chip_offset
+		
+		# Add random velocity away from center
+		var chip_velocity = chip_offset.normalized() * randf_range(3.0, 8.0)
+		chip_velocity.y += randf_range(2.0, 6.0)  # Add upward velocity
+		chip_body.linear_velocity = skull_vel + chip_velocity
+		
+		# Add random angular velocity
+		chip_body.angular_velocity = Vector3(
+			randf_range(-10.0, 10.0),
+			randf_range(-10.0, 10.0),
+			randf_range(-10.0, 10.0)
+		)
+		
+		# Add collision shape
+		var collision = CollisionShape3D.new()
+		var box = BoxShape3D.new()
+		box.size = Vector3(0.5, 0.5, 0.5)  # 4x smaller chip collision
+		collision.shape = box
+		chip_body.add_child(collision)
+		
+		# Configure physics
+		chip_body.mass = 0.1  # Light chips
+		chip_body.gravity_scale = 1.0
+		
+		# Mark as chip
+		chip_body.set_meta("is_chip", true)
+		
+		# Add to scene
+		add_child(chip_body)
+	
+	# Remove the original skull
+	skull_body.queue_free()
+	
+	print("Skull broken into 12 chips!")
 
 func handle_mouse_click():
 	# Get mouse position
@@ -561,12 +658,13 @@ func handle_mouse_click():
 			split_pumpkin(hit_object, result.position)
 		elif hit_object is RigidBody3D and hit_object.has_meta("is_skull"):
 			if not hit_object.has_meta("has_been_hit") or not hit_object.get_meta("has_been_hit"):
-				print("Hit skull - skulls don't split!")
+				print("Hit skull - breaking into chips!")
 				add_score(-5)  # -5 points for hitting a skull
 				hit_object.set_meta("has_been_hit", true)  # Mark as hit
 				show_skull_penalty(result.position)  # Show -10s penalty at click location
 				time_remaining = max(0, time_remaining - 10)  # Deduct 10 seconds
-				play_clang_sound()  # Play clang sound effect
+				play_break_sound()  # Play break sound effect
+				break_skull(hit_object, result.position)  # Break skull into chips
 				update_ui()
 			else:
 				print("Skull already hit - no points!")
