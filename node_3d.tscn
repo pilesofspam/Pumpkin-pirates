@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dfhvbejk6u7pb"]
+[gd_scene load_steps=6 format=3 uid="uid://dfhvbejk6u7pb"]
 
 [ext_resource type="Script" uid="uid://difog3n6sbkco" path="res://node_3d.gd" id="1_a202f"]
 [ext_resource type="Texture2D" uid="uid://dmui5h4sgona5" path="res://assets/backgrounds/graveyard.jpg" id="2_graveyard"]
+[ext_resource type="FontFile" uid="uid://ng4m6my34par" path="res://fonts/Creepster-Regular.ttf" id="3_creepster"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_background"]
 size = Vector2(40, 30)
@@ -43,6 +44,8 @@ autoplay = true
 
 [node name="BreakAudio" type="AudioStreamPlayer" parent="."]
 
+[node name="EvilLaughAudio" type="AudioStreamPlayer" parent="."]
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="GameStartButton" type="Button" parent="UI"]
@@ -52,11 +55,87 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -100.0
-offset_top = -25.0
+offset_top = 20.0
 offset_right = 100.0
-offset_bottom = 25.0
-theme_override_font_sizes/font_size = 24
+offset_bottom = 70.0
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 48
 text = "Game Start"
+
+[node name="InstructionsContainer" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PumpkinInstruction" type="VBoxContainer" parent="UI/InstructionsContainer"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -100.0
+offset_right = -50.0
+offset_bottom = 100.0
+grow_vertical = 0
+
+[node name="PumpkinModel" type="SubViewport" parent="UI/InstructionsContainer/PumpkinInstruction"]
+
+[node name="PumpkinText" type="Label" parent="UI/InstructionsContainer/PumpkinInstruction"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 40
+text = "Slice Pumpkins!"
+horizontal_alignment = 1
+
+[node name="PumpkinPoints" type="Label" parent="UI/InstructionsContainer/PumpkinInstruction"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 32
+text = "+10 points"
+horizontal_alignment = 1
+
+[node name="SkullInstruction" type="VBoxContainer" parent="UI/InstructionsContainer"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 50.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = 100.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="SkullModel" type="SubViewport" parent="UI/InstructionsContainer/SkullInstruction"]
+
+[node name="SkullText" type="Label" parent="UI/InstructionsContainer/SkullInstruction"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 40
+text = "Avoid Skulls"
+horizontal_alignment = 1
+
+[node name="SkullPenalty" type="Label" parent="UI/InstructionsContainer/SkullInstruction"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 32
+text = "-5 points, -10 seconds"
+horizontal_alignment = 1
 
 [node name="ScoreLabel" type="Label" parent="UI"]
 offset_left = 20.0
@@ -64,19 +143,21 @@ offset_top = 20.0
 offset_right = 200.0
 offset_bottom = 60.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 48
 text = "Score: 0"
 
 [node name="ScoreGoalLabel" type="Label" parent="UI"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -200.0
+offset_left = -300.0
 offset_top = 20.0
 offset_right = -20.0
 offset_bottom = 60.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 48
 text = "Score Goal: 100"
 
 [node name="LevelLabel" type="Label" parent="UI"]
@@ -90,7 +171,8 @@ offset_top = -60.0
 offset_right = -20.0
 offset_bottom = -20.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 48
 text = "Level: 1"
 
 [node name="TimerLabel" type="Label" parent="UI"]
@@ -102,7 +184,8 @@ offset_top = -60.0
 offset_right = 200.0
 offset_bottom = -20.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 48
 text = "Time: 60"
 
 [node name="GameOverLabel" type="Label" parent="UI"]
@@ -113,12 +196,31 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -50.0
+offset_top = -120.0
 offset_right = 200.0
-offset_bottom = 50.0
+offset_bottom = -60.0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
-theme_override_font_sizes/font_size = 48
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 96
 text = "GAME OVER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FinalScoreLabel" type="Label" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -20.0
+offset_right = 200.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 64
+text = "Your Score: 0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -134,7 +236,8 @@ offset_top = -25.0
 offset_right = 100.0
 offset_bottom = 25.0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 72
 text = "-10s"
 horizontal_alignment = 1
 vertical_alignment = 1

@@ -30,6 +30,7 @@ var background_music: AudioStreamPlayer
 var clang_audio: AudioStreamPlayer
 var woosh_audio: AudioStreamPlayer
 var break_audio: AudioStreamPlayer
+var evil_laugh_audio: AudioStreamPlayer
 
 # Chip spawning variables
 var chip_scene: PackedScene
@@ -60,6 +61,18 @@ var level_label: Label
 var timer_label: Label
 var game_over_label: Label
 var skull_penalty_label: Label
+var final_score_label: Label
+
+# Instruction UI references
+var instructions_container: Control
+var pumpkin_instruction: VBoxContainer
+var skull_instruction: VBoxContainer
+var pumpkin_model_viewport: SubViewport
+var skull_model_viewport: SubViewport
+
+# Spinning models
+var spinning_pumpkin: Node3D
+var spinning_skull: Node3D
 
 # Timer variables
 var game_timer: Timer
@@ -88,6 +101,9 @@ func _ready():
 	# Get reference to the break audio player
 	break_audio = get_node("BreakAudio")
 	
+	# Get reference to the evil laugh audio player
+	evil_laugh_audio = get_node("EvilLaughAudio")
+	
 	# Load all thunder sound files
 	load_thunder_sounds()
 	
@@ -98,6 +114,7 @@ func _ready():
 	setup_clang_sound()
 	setup_woosh_sound()
 	setup_break_sound()
+	setup_evil_laugh_sound()
 	
 	# Load chip scene
 	chip_scene = load("res://assets/models/chip.blend")
@@ -122,12 +139,23 @@ func _ready():
 	timer_label = get_node("UI/TimerLabel")
 	game_over_label = get_node("UI/GameOverLabel")
 	skull_penalty_label = get_node("UI/SkullPenaltyLabel")
+	final_score_label = get_node("UI/FinalScoreLabel")
+	
+	# Get instruction UI references
+	instructions_container = get_node("UI/InstructionsContainer")
+	pumpkin_instruction = get_node("UI/InstructionsContainer/PumpkinInstruction")
+	skull_instruction = get_node("UI/InstructionsContainer/SkullInstruction")
+	pumpkin_model_viewport = get_node("UI/InstructionsContainer/PumpkinInstruction/PumpkinModel")
+	skull_model_viewport = get_node("UI/InstructionsContainer/SkullInstruction/SkullModel")
 	
 	# Connect the game start button
 	game_start_button.pressed.connect(_on_game_start_button_pressed)
 	
 	# Initialize UI
 	update_ui()
+	
+	# Setup instruction models
+	setup_instruction_models()
 	
 	# Create and configure the spawn timer (don't start until game begins)
 	spawn_timer = Timer.new()
@@ -159,14 +187,6 @@ func _ready():
 	
 	# Don't spawn anything until game starts
 
-func _process(delta):
-	# Clean up pumpkins that have fallen below the threshold
-	cleanup_fallen_pumpkins()
-	
-	# Handle mouse input for pumpkin splitting
-	if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		print("Mouse clicked!")
-		handle_mouse_click()
 
 func _on_spawn_timer_timeout():
 	spawn_pumpkin()
@@ -193,6 +213,13 @@ func start_game():
 	game_start_button.visible = false  # Hide the start button
 	game_over_label.visible = false  # Hide game over label
 	skull_penalty_label.visible = false  # Hide penalty label
+	instructions_container.visible = false  # Hide instructions
+	
+	# Hide the spinning instruction models
+	if spinning_pumpkin != null:
+		spinning_pumpkin.visible = false
+	if spinning_skull != null:
+		spinning_skull.visible = false
 	
 	# Reset timer
 	time_remaining = 60.0
@@ -252,8 +279,13 @@ func game_over():
 	skull_spawn_timer.stop()
 	game_timer.stop()
 	
-	# Show game over message
+	# Play evil laugh sound
+	play_evil_laugh_sound()
+	
+	# Show game over message and final score
 	game_over_label.visible = true
+	final_score_label.text = "Your Score: " + str(score)
+	final_score_label.visible = true
 	skull_penalty_label.visible = false  # Hide penalty label
 	
 	# Clear all spawned objects
@@ -264,7 +296,15 @@ func game_over():
 	# Wait 5 seconds then show start button again
 	await get_tree().create_timer(5.0).timeout
 	game_over_label.visible = false
+	final_score_label.visible = false
 	game_start_button.visible = true
+	instructions_container.visible = true  # Show instructions again
+	
+	# Show the spinning instruction models again
+	if spinning_pumpkin != null:
+		spinning_pumpkin.visible = true
+	if spinning_skull != null:
+		spinning_skull.visible = true
 	
 	# Reset game state
 	score = 0
@@ -565,6 +605,69 @@ func play_break_sound():
 		# Add random pitch variation
 		break_audio.pitch_scale = randf_range(0.8, 1.2)
 		break_audio.play()
+
+func setup_evil_laugh_sound():
+	# Load the evil laugh sound file
+	var evil_laugh_sound = load("res://sounds/evillaugh.mp3")
+	if evil_laugh_sound != null:
+		evil_laugh_audio.stream = evil_laugh_sound
+		evil_laugh_audio.volume_db = 0.0
+		print("Evil laugh sound effect loaded")
+	else:
+		print("Could not load evillaugh.mp3 sound effect")
+
+func play_evil_laugh_sound():
+	if evil_laugh_audio.stream != null:
+		evil_laugh_audio.play()
+
+func setup_instruction_models():
+	# Make instruction container not intercept mouse events
+	instructions_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Setup pumpkin model in viewport
+	var pumpkin_scene_instance = pumpkin_scene.instantiate()
+	spinning_pumpkin = pumpkin_scene_instance
+	pumpkin_model_viewport.add_child(spinning_pumpkin)
+	
+	# Position and scale pumpkin
+	spinning_pumpkin.position = Vector3(0, 2, 2)  # +1 in Y direction
+	spinning_pumpkin.scale = Vector3(1.0, 1.0, 1.0)
+	
+	# Setup skull model in viewport
+	var skull_scene_instance = skull_scene.instantiate()
+	spinning_skull = skull_scene_instance
+	skull_model_viewport.add_child(spinning_skull)
+	
+	# Position and scale skull
+	spinning_skull.position = Vector3(0, -2, 2)  # -2 in Y direction
+	spinning_skull.scale = Vector3(6.0, 6.0, 6.0)  # 6x bigger (3x * 2x)
+	
+	# Add cameras to viewports
+	var pumpkin_camera = Camera3D.new()
+	pumpkin_camera.position = Vector3(0, 0, 5)
+	pumpkin_model_viewport.add_child(pumpkin_camera)
+	
+	var skull_camera = Camera3D.new()
+	skull_camera.position = Vector3(0, 0, 5)
+	skull_model_viewport.add_child(skull_camera)
+	
+	print("Instruction models setup complete")
+
+func _process(delta):
+	# Clean up pumpkins that have fallen below the threshold
+	cleanup_fallen_pumpkins()
+	
+	# Rotate instruction models
+	if spinning_pumpkin != null:
+		spinning_pumpkin.rotation.y += delta * 1.0  # Slow rotation
+	
+	if spinning_skull != null:
+		spinning_skull.rotation.y += delta * 1.0  # Slow rotation
+	
+	# Handle mouse input for pumpkin splitting
+	if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		print("Mouse clicked!")
+		handle_mouse_click()
 
 
 func break_skull(skull_body: RigidBody3D, hit_position: Vector3):
