@@ -32,6 +32,10 @@ var woosh_audio: AudioStreamPlayer
 var break_audio: AudioStreamPlayer
 var evil_laugh_audio: AudioStreamPlayer
 
+# Network references
+var udp_server: UDPServer
+var udp_peer: PacketPeerUDP
+
 # Chip spawning variables
 var chip_scene: PackedScene
 
@@ -184,6 +188,9 @@ func _ready():
 	game_timer.timeout.connect(_on_game_timer_timeout)
 	game_timer.autostart = false  # Don't start until game begins
 	add_child(game_timer)
+	
+	# Setup UDP server for network slicing
+	setup_udp_server()
 	
 	# Don't spawn anything until game starts
 
@@ -664,9 +671,13 @@ func _process(delta):
 	if spinning_skull != null:
 		spinning_skull.rotation.y += delta * 1.0  # Slow rotation
 	
+	# Process network packets
+	process_network_packets()
+	
 	# Handle mouse input for pumpkin splitting
 	if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		print("Mouse clicked!")
+		var mouse_pos = get_viewport().get_mouse_position()
+		print("Mouse clicked! Coordinates: ", mouse_pos)
 		handle_mouse_click()
 
 
@@ -828,3 +839,119 @@ func create_pumpkin_part(scene: PackedScene, position: Vector3, velocity: Vector
 	
 	# Add to scene
 	add_child(part_body)
+
+
+# Network functions
+func setup_udp_server():
+	"""Setup UDP server to listen on port 8090 for slice coordinates"""
+	udp_server = UDPServer.new()
+	udp_peer = PacketPeerUDP.new()
+	
+	var result = udp_server.listen(8090, "0.0.0.0")
+	if result == OK:
+		print("UDP server listening on port 8090")
+	else:
+		print("Failed to start UDP server on port 8090")
+
+
+func process_network_packets():
+	"""Process incoming UDP packets for slice coordinates"""
+	if udp_server == null:
+		return
+		
+	# Poll for new connections
+	udp_server.poll()
+	
+	# Check for new packets
+	if udp_server.is_connection_available():
+		var peer = udp_server.take_connection()
+		var packet = peer.get_packet()
+		var packet_string = packet.get_string_from_utf8()
+		
+		print("Received packet: ", packet_string)
+		
+		# Parse JSON packet
+		var json = JSON.new()
+		var parse_result = json.parse(packet_string)
+		
+		if parse_result == OK:
+			var data = json.data
+			if data.has("slice") and data.slice is Array and data.slice.size() == 2:
+				var x = data.slice[0]
+				var y = data.slice[1]
+				print("Network slice coordinates: ", x, ", ", y)
+				
+				# Convert network coordinates to world coordinates and perform slice
+				network_slice_at_coordinates(x, y)
+			else:
+				print("Invalid slice packet format")
+		else:
+			print("Failed to parse JSON packet")
+
+
+func network_slice_at_coordinates(net_x: int, net_y: int):
+	"""Convert network coordinates to world coordinates and perform slice"""
+	# Convert network coordinates to world coordinates
+	# Assuming network coordinates are screen coordinates (0-1920, 0-1080)
+	# We need to convert to world coordinates for raycasting
+	var screen_size = get_viewport().get_visible_rect().size
+	var normalized_x = float(net_x) / screen_size.x
+	var normalized_y = float(net_y) / screen_size.y
+	
+	# Convert to viewport coordinates
+	var viewport_pos = Vector2(normalized_x * screen_size.x, normalized_y * screen_size.y)
+	
+	print("Converted coordinates: ", viewport_pos)
+	
+	# First check if we hit the Game Start button (only if game not started)
+	if not game_started and game_start_button.visible:
+		var button_rect = game_start_button.get_rect()
+		if button_rect.has_point(viewport_pos):
+			print("Network slice hit Game Start button!")
+			_on_game_start_button_pressed()
+			return
+	
+	# If game is started, perform 3D raycast for game objects
+	if game_started:
+		# Perform raycast from camera through the viewport position
+		var from = camera.project_ray_origin(viewport_pos)
+		var to = from + camera.project_ray_normal(viewport_pos) * 1000.0
+		
+		var space_state = get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.create(from, to)
+		var result = space_state.intersect_ray(query)
+		
+		if result:
+			var hit_object = result.collider
+			print("Network slice hit: ", hit_object.name)
+			
+			# Handle the hit using existing logic
+			handle_network_slice_hit(hit_object, result.position)
+		else:
+			print("Network slice hit nothing")
+	else:
+		print("Game not started and no UI hit detected")
+
+
+func handle_network_slice_hit(hit_object: Node3D, hit_position: Vector3):
+	"""Handle network slice hit using existing game logic"""
+	# Check if it's a pumpkin
+	if hit_object.get_meta("is_original_pumpkin", false):
+		add_score(10)
+		split_pumpkin(hit_object, hit_position)
+		play_woosh_sound()
+		print("Network sliced pumpkin!")
+		
+	# Check if it's a skull (first hit only)
+	elif hit_object.get_meta("is_skull", false):
+		if not hit_object.get_meta("has_been_hit", false):
+			add_score(-5)
+			hit_object.set_meta("has_been_hit", true)
+			show_skull_penalty(hit_position)
+			time_remaining = max(0, time_remaining - 10)
+			play_break_sound()
+			break_skull(hit_object, hit_position)
+			update_ui()
+			print("Network hit skull!")
+		else:
+			print("Network hit already-hit skull - no points!")
