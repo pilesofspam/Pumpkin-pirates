@@ -81,6 +81,9 @@ var spinning_skull: Node3D
 # Timer variables
 var game_timer: Timer
 
+# Particle system reference
+var pumpkin_particles: GPUParticles3D
+
 
 func _ready():
 	# Load the pumpkin scene
@@ -151,6 +154,10 @@ func _ready():
 	skull_instruction = get_node("UI/InstructionsContainer/SkullInstruction")
 	pumpkin_model_viewport = get_node("UI/InstructionsContainer/PumpkinInstruction/PumpkinModel")
 	skull_model_viewport = get_node("UI/InstructionsContainer/SkullInstruction/SkullModel")
+	
+	# Get particle system reference
+	pumpkin_particles = get_node("GPUParticles3D")
+	setup_particle_system()
 	
 	# Connect the game start button
 	game_start_button.pressed.connect(_on_game_start_button_pressed)
@@ -789,11 +796,14 @@ func handle_mouse_click():
 	else:
 		print("No hit detected")
 
-func split_pumpkin(pumpkin_body: RigidBody3D, _hit_position: Vector3):
+func split_pumpkin(pumpkin_body: RigidBody3D, hit_position: Vector3):
 	# Check if all pumpkin part scenes are loaded
 	if pumpkin_bottom_scene == null or pumpkin_top_scene == null or pumpkin_left_scene == null or pumpkin_right_scene == null:
 		print("Pumpkin part scenes not loaded!")
 		return
+	
+	# Trigger particle explosion at hit position
+	trigger_pumpkin_particles(hit_position)
 	
 	# Get the pumpkin's current position and velocity
 	var pumpkin_pos = pumpkin_body.global_position
@@ -956,3 +966,68 @@ func handle_network_slice_hit(hit_object: Node3D, hit_position: Vector3):
 			print("Network hit skull!")
 		else:
 			print("Network hit already-hit skull - no points!")
+
+func setup_particle_system():
+	"""Configure the particle system properties"""
+	if pumpkin_particles == null:
+		print("Particle system not found!")
+		return
+	
+	# Don't emit at start
+	pumpkin_particles.emitting = false
+	pumpkin_particles.one_shot = true  # Only emit once when triggered
+	
+	# Configure particle properties
+	pumpkin_particles.amount = 50
+	pumpkin_particles.lifetime = 0.5  # Emit for 0.5 seconds
+	pumpkin_particles.explosiveness = 1.0  # All particles emit at once
+	
+	# Get the process material to configure it
+	var material = pumpkin_particles.process_material as ParticleProcessMaterial
+	if material == null:
+		print("Particle material not found!")
+		return
+	
+	# Configure emission - sphere for random directions
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	material.emission_sphere_radius = 0.3
+	
+	# Direction and spread
+	material.direction = Vector3(0, 1, 0)  # Upward bias
+	material.spread = 180.0  # Full sphere spread
+	
+	# Velocity
+	material.initial_velocity_min = 3.0
+	material.initial_velocity_max = 8.0
+	
+	# Gravity
+	material.gravity = Vector3(0, -9.8, 0)
+	
+	# Scale
+	material.scale_min = 0.05
+	material.scale_max = 0.15
+	
+	# Create color gradient: bright red to faded yellow
+	var gradient = Gradient.new()
+	gradient.add_point(0.0, Color(1, 0, 0, 1))  # Bright red at start
+	gradient.add_point(0.5, Color(1, 0.5, 0, 0.8))  # Orange midway
+	gradient.add_point(1.0, Color(1, 1, 0, 0))  # Faded yellow at end (transparent)
+	
+	var gradient_texture = GradientTexture1D.new()
+	gradient_texture.gradient = gradient
+	material.color_ramp = gradient_texture
+	
+	print("Particle system configured!")
+
+func trigger_pumpkin_particles(hitpos: Vector3):
+	"""Trigger particle explosion at the specified position"""
+	if pumpkin_particles == null:
+		print("Particle system not available!")
+		return
+	
+	# Move particles to hit position and emit
+	pumpkin_particles.global_position = hitpos
+	pumpkin_particles.emitting = true
+	pumpkin_particles.restart()
+	
+	print("Triggered particles at position: ", hitpos)

@@ -1,0 +1,66 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient that transitions from orange to white -->
+    <linearGradient id="pumpkinToSkull" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B00;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#FF8C1A;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#E8D5B7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5F5DC;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="darkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#D35400;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A08060;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B7355;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main body - transitioning from pumpkin to skull -->
+  <ellipse cx="64" cy="70" rx="50" ry="45" fill="url(#pumpkinToSkull)" stroke="url(#darkGradient)" stroke-width="2"/>
+  
+  <!-- Left side: Pumpkin segments -->
+  <ellipse cx="34" cy="70" rx="15" ry="45" fill="#FF8C1A" opacity="0.6"/>
+  <ellipse cx="50" cy="70" rx="12" ry="45" fill="#FF8C1A" opacity="0.4"/>
+  
+  <!-- Right side: Skull bone structure -->
+  <ellipse cx="94" cy="70" rx="15" ry="45" fill="#E8E8DC" opacity="0.3"/>
+  <ellipse cx="78" cy="70" rx="12" ry="45" fill="#E8E8DC" opacity="0.2"/>
+  
+  <!-- Stem (left side only) -->
+  <rect x="25" y="30" width="6" height="12" rx="2" fill="#6B4423" stroke="#4A2F1A" stroke-width="1"/>
+  <ellipse cx="28" cy="32" rx="4" ry="2" fill="#7D5A3A"/>
+  <ellipse cx="22" cy="35" rx="6" ry="3" fill="#2D8B2D" stroke="#1F6B1F" stroke-width="0.8" transform="rotate(-30 22 35)"/>
+  
+  <!-- Left eye: Jack-o'-lantern triangle -->
+  <polygon points="35,55 43,58 43,68 35,65" fill="#1A1A1A"/>
+  
+  <!-- Right eye: Skull socket (round) -->
+  <ellipse cx="88" cy="60" rx="10" ry="12" fill="#1A1A1A"/>
+  <ellipse cx="86" cy="57" rx="3" ry="4" fill="#333333"/>
+  
+  <!-- Nose: Transitioning shape -->
+  <path d="M 58 75 L 54 82 L 62 84 L 70 82 L 68 75 Q 63 78 58 75" fill="#1A1A1A"/>
+  
+  <!-- Mouth: Transitioning from carved to teeth -->
+  <!-- Left side: Zigzag carved mouth -->
+  <path d="M 35 90 L 40 95 L 45 90 L 50 95 L 55 90 L 60 95 L 64 92" 
+        fill="none" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Right side: Skull teeth -->
+  <rect x="68" y="88" width="6" height="10" rx="1" fill="#1A1A1A"/>
+  <rect x="76" y="88" width="6" height="10" rx="1" fill="#1A1A1A"/>
+  <rect x="84" y="88" width="6" height="10" rx="1" fill="#1A1A1A"/>
+  <rect x="92" y="88" width="5" height="10" rx="1" fill="#1A1A1A"/>
+  
+  <!-- Jaw line for skull side -->
+  <path d="M 70 85 Q 95 85 105 72" fill="none" stroke="#8B7355" stroke-width="2"/>
+  
+  <!-- Cheek bone definition (skull side) -->
+  <ellipse cx="92" cy="75" rx="8" ry="6" fill="none" stroke="#A08060" stroke-width="1.5"/>
+  
+  <!-- Highlight on pumpkin side -->
+  <ellipse cx="38" cy="50" rx="10" ry="16" fill="white" opacity="0.3"/>
+  
+  <!-- Shadow/crack in middle transition -->
+  <path d="M 64 40 Q 66 64 64 100" stroke="#4A4A4A" stroke-width="1.5" opacity="0.4" fill="none" stroke-dasharray="3,2"/>
+</svg>

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://dfhvbejk6u7pb"]
+[gd_scene load_steps=10 format=3 uid="uid://dfhvbejk6u7pb"]
 
 [ext_resource type="Script" uid="uid://bfnify0qqgkpc" path="res://node_3d.gd" id="1_a202f"]
 [ext_resource type="Texture2D" uid="uid://dmui5h4sgona5" path="res://assets/backgrounds/graveyard.jpg" id="2_graveyard"]
@@ -9,6 +9,20 @@ size = Vector2(40, 30)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_background"]
 albedo_texture = ExtResource("2_graveyard")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_a0tk4"]
+initial_velocity_max = 47.62
+scale_max = 24.81
+color = Color(1, 0, 0, 1)
+hue_variation_min = -0.13000003
+hue_variation_max = 0.12999998
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a0tk4"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_r3fl7"]
+material = SubResource("StandardMaterial3D_a0tk4")
+
+[sub_resource type="Skin" id="Skin_jka67"]
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_a202f")
@@ -241,3 +255,11 @@ theme_override_font_sizes/font_size = 72
 text = "-10s"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+emitting = false
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_a0tk4")
+draw_pass_1 = SubResource("SphereMesh_r3fl7")
+draw_skin = SubResource("Skin_jka67")
