@@ -681,7 +681,7 @@ func _process(delta):
 		handle_mouse_click()
 
 
-func break_skull(skull_body: RigidBody3D, hit_position: Vector3):
+func break_skull(skull_body: RigidBody3D, _hit_position: Vector3):
 	if chip_scene == null:
 		print("Chip scene not loaded!")
 		return
@@ -689,7 +689,7 @@ func break_skull(skull_body: RigidBody3D, hit_position: Vector3):
 	# Get the skull's current position and velocity
 	var skull_pos = skull_body.global_position
 	var skull_vel = skull_body.linear_velocity
-	var skull_ang_vel = skull_body.angular_velocity
+	var _skull_ang_vel = skull_body.angular_velocity
 	
 	# Create 12 chips in a sphere pattern around the skull
 	for i in range(12):
@@ -711,8 +711,8 @@ func break_skull(skull_body: RigidBody3D, hit_position: Vector3):
 		
 		chip_body.add_child(chip_instance)
 		
-		# Set position and physics
-		chip_body.global_position = skull_pos + chip_offset
+		# Set position and physics (use position instead of global_position before adding to tree)
+		chip_body.position = skull_pos + chip_offset
 		
 		# Add random velocity away from center
 		var chip_velocity = chip_offset.normalized() * randf_range(3.0, 8.0)
@@ -789,7 +789,7 @@ func handle_mouse_click():
 	else:
 		print("No hit detected")
 
-func split_pumpkin(pumpkin_body: RigidBody3D, hit_position: Vector3):
+func split_pumpkin(pumpkin_body: RigidBody3D, _hit_position: Vector3):
 	# Check if all pumpkin part scenes are loaded
 	if pumpkin_bottom_scene == null or pumpkin_top_scene == null or pumpkin_left_scene == null or pumpkin_right_scene == null:
 		print("Pumpkin part scenes not loaded!")
@@ -817,14 +817,14 @@ func split_pumpkin(pumpkin_body: RigidBody3D, hit_position: Vector3):
 	# Remove the original pumpkin
 	pumpkin_body.queue_free()
 
-func create_pumpkin_part(scene: PackedScene, position: Vector3, velocity: Vector3, angular_velocity: Vector3):
+func create_pumpkin_part(scene: PackedScene, part_position: Vector3, velocity: Vector3, angular_velocity: Vector3):
 	# Create the pumpkin part body
 	var part_body = RigidBody3D.new()
 	var part_instance = scene.instantiate()
 	part_body.add_child(part_instance)
 	
-	# Set position and physics
-	part_body.global_position = position
+	# Set position and physics (use position instead of global_position before adding to tree)
+	part_body.position = part_position
 	part_body.linear_velocity = velocity
 	part_body.angular_velocity = angular_velocity
 	part_body.mass = 0.5
@@ -839,6 +839,7 @@ func create_pumpkin_part(scene: PackedScene, position: Vector3, velocity: Vector
 	
 	# Add to scene
 	add_child(part_body)
+
 
 
 # Network functions

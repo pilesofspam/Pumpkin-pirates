@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://dfhvbejk6u7pb"]
 
-[ext_resource type="Script" uid="uid://difog3n6sbkco" path="res://node_3d.gd" id="1_a202f"]
+[ext_resource type="Script" uid="uid://bfnify0qqgkpc" path="res://node_3d.gd" id="1_a202f"]
 [ext_resource type="Texture2D" uid="uid://dmui5h4sgona5" path="res://assets/backgrounds/graveyard.jpg" id="2_graveyard"]
 [ext_resource type="FontFile" uid="uid://ng4m6my34par" path="res://fonts/Creepster-Regular.ttf" id="3_creepster"]
 
