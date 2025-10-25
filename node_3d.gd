@@ -364,6 +364,14 @@ func spawn_pumpkin():
 	# Add the pumpkin model as a child of the RigidBody3D
 	pumpkin_body.add_child(pumpkin_instance)
 	
+	# Add a pale yellow point light to the pumpkin
+	var pumpkin_light = OmniLight3D.new()
+	pumpkin_light.light_color = Color(1.0, 1.0, 0.8, 1.0)  # Pale yellow
+	pumpkin_light.light_energy = 2.0  # Moderate brightness
+	pumpkin_light.omni_range = 3.0  # Small range around the pumpkin
+	pumpkin_light.position = Vector3(0, 0, 0)  # Center of the pumpkin
+	pumpkin_body.add_child(pumpkin_light)
+	
 	# Add collision shape to the pumpkin
 	var collision_shape = CollisionShape3D.new()
 	var sphere_shape = SphereShape3D.new()
@@ -832,6 +840,14 @@ func create_pumpkin_part(scene: PackedScene, part_position: Vector3, velocity: V
 	var part_body = RigidBody3D.new()
 	var part_instance = scene.instantiate()
 	part_body.add_child(part_instance)
+	
+	# Add a pale yellow point light to the pumpkin part
+	var part_light = OmniLight3D.new()
+	part_light.light_color = Color(1.0, 1.0, 0.8, 1.0)  # Pale yellow
+	part_light.light_energy = 1.5  # Slightly dimmer than full pumpkins
+	part_light.omni_range = 2.0  # Smaller range for parts
+	part_light.position = Vector3(0, 0, 0)  # Center of the part
+	part_body.add_child(part_light)
 	
 	# Set position and physics (use position instead of global_position before adding to tree)
 	part_body.position = part_position
