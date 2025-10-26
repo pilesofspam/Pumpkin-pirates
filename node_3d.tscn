@@ -257,6 +257,32 @@ text = "-10s"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="LevelUpLabel" type="Label" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.8, 0.2, 0.8, 1)
+theme_override_fonts/font = ExtResource("3_creepster")
+theme_override_font_sizes/font_size = 96
+text = "Level 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TadaAudio" type="AudioStreamPlayer" parent="."]
+
+[node name="WooAudio" type="AudioStreamPlayer" parent="."]
+
+[node name="BooAudio" type="AudioStreamPlayer" parent="."]
+
+[node name="AahhAudio" type="AudioStreamPlayer" parent="."]
+
 [node name="GPUParticles3D" type="GPUParticles3D" parent="."]
 emitting = false
 one_shot = true

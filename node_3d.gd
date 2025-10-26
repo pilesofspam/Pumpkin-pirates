@@ -31,6 +31,11 @@ var clang_audio: AudioStreamPlayer
 var woosh_audio: AudioStreamPlayer
 var break_audio: AudioStreamPlayer
 var evil_laugh_audio: AudioStreamPlayer
+var tada_audio: AudioStreamPlayer
+var woo_audio: AudioStreamPlayer
+var woo_sounds: Array[AudioStream] = []
+var boo_audio: AudioStreamPlayer
+var aahh_audio: AudioStreamPlayer
 
 # Network references
 var udp_server: UDPServer
@@ -66,6 +71,7 @@ var timer_label: Label
 var game_over_label: Label
 var skull_penalty_label: Label
 var final_score_label: Label
+var level_up_label: Label
 
 # Instruction UI references
 var instructions_container: Control
@@ -111,8 +117,23 @@ func _ready():
 	# Get reference to the evil laugh audio player
 	evil_laugh_audio = get_node("EvilLaughAudio")
 	
+	# Get reference to the tada audio player
+	tada_audio = get_node("TadaAudio")
+	
+	# Get reference to the woo audio player
+	woo_audio = get_node("WooAudio")
+	
+	# Get reference to the boo audio player
+	boo_audio = get_node("BooAudio")
+	
+	# Get reference to the aahh audio player
+	aahh_audio = get_node("AahhAudio")
+	
 	# Load all thunder sound files
 	load_thunder_sounds()
+	
+	# Load woo sound files
+	load_woo_sounds()
 	
 	# Load and setup background music
 	setup_background_music()
@@ -122,6 +143,9 @@ func _ready():
 	setup_woosh_sound()
 	setup_break_sound()
 	setup_evil_laugh_sound()
+	setup_tada_sound()
+	setup_boo_sound()
+	setup_aahh_sound()
 	
 	# Load chip scene
 	chip_scene = load("res://assets/models/chip.blend")
@@ -147,6 +171,7 @@ func _ready():
 	game_over_label = get_node("UI/GameOverLabel")
 	skull_penalty_label = get_node("UI/SkullPenaltyLabel")
 	final_score_label = get_node("UI/FinalScoreLabel")
+	level_up_label = get_node("UI/LevelUpLabel")
 	
 	# Get instruction UI references
 	instructions_container = get_node("UI/InstructionsContainer")
@@ -269,6 +294,10 @@ func level_up():
 	# Keep current score - don't reset to 0
 	time_remaining = 60.0  # Reset timer to 60 seconds
 	update_ui()
+	
+	# Play tada sound and show level up display
+	play_tada_sound()
+	show_level_up_display()
 	
 	# Increase spawn rate slightly for higher levels
 	spawn_timer.wait_time = max(1.0, spawn_timer.wait_time - 0.25)  # Faster pumpkin spawning
@@ -405,6 +434,9 @@ func spawn_pumpkin():
 	# Add the pumpkin body to the scene
 	add_child(pumpkin_body)
 	
+	# Play random woo sound
+	play_woo_sound()
+	
 	print("Spawned pumpkin at position: ", spawn_position, " with velocity: ", initial_velocity)
 
 func spawn_skull():
@@ -473,6 +505,9 @@ func spawn_skull():
 	
 	# Add the skull body to the scene
 	add_child(skull_body)
+	
+	# Play boo sound
+	play_boo_sound()
 	
 	print("Spawned skull at position: ", spawn_position, " with velocity: ", initial_velocity)
 
@@ -642,6 +677,93 @@ func play_evil_laugh_sound():
 	if evil_laugh_audio.stream != null:
 		evil_laugh_audio.play()
 
+func setup_tada_sound():
+	# Load the tada sound file
+	var tada_sound = load("res://sounds/tada.wav")
+	if tada_sound != null:
+		tada_audio.stream = tada_sound
+		tada_audio.volume_db = 0.0
+		print("Tada sound effect loaded")
+	else:
+		print("Could not load tada.wav sound effect")
+
+func play_tada_sound():
+	if tada_audio.stream != null:
+		tada_audio.play()
+
+func load_woo_sounds():
+	# Load all available woo sound files
+	var woo_files = ["res://sounds/woo1.wav", "res://sounds/woo2.wav", "res://sounds/woo3.wav"]
+	
+	for file_path in woo_files:
+		var woo_sound = load(file_path)
+		if woo_sound != null:
+			woo_sounds.append(woo_sound)
+			print("Loaded woo sound: ", file_path)
+		else:
+			print("Could not load woo sound: ", file_path)
+	
+	if woo_sounds.size() == 0:
+		print("No woo sound files found!")
+
+func play_woo_sound():
+	if woo_sounds.size() > 0:
+		# Select a random woo sound
+		var random_woo = woo_sounds[randi() % woo_sounds.size()]
+		woo_audio.stream = random_woo
+		
+		# Add some pitch and volume variation for variety
+		woo_audio.pitch_scale = randf_range(0.8, 1.2)
+		woo_audio.volume_db = randf_range(-2.0, 2.0)
+		
+		# Play the woo sound
+		woo_audio.play()
+	else:
+		print("No woo sound files available!")
+
+func setup_boo_sound():
+	# Load the boo sound file
+	var boo_sound = load("res://sounds/boo.wav")
+	if boo_sound != null:
+		boo_audio.stream = boo_sound
+		boo_audio.volume_db = 0.0
+		print("Boo sound effect loaded")
+	else:
+		print("Could not load boo.wav sound effect")
+
+func play_boo_sound():
+	if boo_audio.stream != null:
+		# Add some pitch and volume variation for variety
+		boo_audio.pitch_scale = randf_range(0.8, 1.2)
+		boo_audio.volume_db = randf_range(-2.0, 2.0)
+		boo_audio.play()
+
+func setup_aahh_sound():
+	# Load the aahh sound file
+	var aahh_sound = load("res://sounds/aahh.wav")
+	if aahh_sound != null:
+		aahh_audio.stream = aahh_sound
+		aahh_audio.volume_db = 0.0
+		print("Aahh sound effect loaded")
+	else:
+		print("Could not load aahh.wav sound effect")
+
+func play_aahh_sound():
+	if aahh_audio.stream != null:
+		# Add some pitch and volume variation for variety
+		aahh_audio.pitch_scale = randf_range(0.8, 1.2)
+		aahh_audio.volume_db = randf_range(-2.0, 2.0)
+		aahh_audio.play()
+
+func show_level_up_display():
+	# Show the level up label with purple text
+	level_up_label.text = "Level " + str(level)
+	level_up_label.visible = true
+	
+	# Hide the label after 1 second
+	await get_tree().create_timer(1.0).timeout
+	level_up_label.visible = false
+
 func setup_instruction_models():
 	# Make instruction container not intercept mouse events
 	instructions_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -801,6 +923,7 @@ func handle_mouse_click():
 				show_skull_penalty(result.position)  # Show -10s penalty at click location
 				time_remaining = max(0, time_remaining - 10)  # Deduct 10 seconds
 				play_break_sound()  # Play break sound effect
+				play_aahh_sound()  # Play aahh sound effect
 				break_skull(hit_object, result.position)  # Break skull into chips
 				update_ui()
 			else:
@@ -985,6 +1108,7 @@ func handle_network_slice_hit(hit_object: Node3D, hit_position: Vector3):
 			show_skull_penalty(hit_position)
 			time_remaining = max(0, time_remaining - 10)
 			play_break_sound()
+			play_aahh_sound()  # Play aahh sound effect
 			break_skull(hit_object, hit_position)
 			update_ui()
 			print("Network hit skull!")
