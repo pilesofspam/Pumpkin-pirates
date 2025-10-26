@@ -272,7 +272,7 @@ func level_up():
 	
 	# Increase spawn rate slightly for higher levels
 	spawn_timer.wait_time = max(1.0, spawn_timer.wait_time - 0.25)  # Faster pumpkin spawning
-	skull_spawn_timer.wait_time = max(2.0, skull_spawn_timer.wait_time * 0.5)  # 50% faster skull spawning
+	skull_spawn_timer.wait_time = max(2.0, skull_spawn_timer.wait_time * 0.8)  # 20% faster skull spawning
 	
 	print("Level up! Now on level " + str(level) + " - Score goal increased to " + str(score_goal))
 
@@ -375,7 +375,7 @@ func spawn_pumpkin():
 	# Add collision shape to the pumpkin
 	var collision_shape = CollisionShape3D.new()
 	var sphere_shape = SphereShape3D.new()
-	sphere_shape.radius = 1.0 # Adjust size to match your pumpkin
+	sphere_shape.radius = 2.0 # Adjust size to match your pumpkin
 	collision_shape.shape = sphere_shape
 	pumpkin_body.add_child(collision_shape)
 	
@@ -654,6 +654,14 @@ func setup_instruction_models():
 	# Position and scale pumpkin
 	spinning_pumpkin.position = Vector3(0, 2, 2)  # +1 in Y direction
 	spinning_pumpkin.scale = Vector3(1.0, 1.0, 1.0)
+	
+	# Add a pale yellow point light to the instruction pumpkin
+	var instruction_pumpkin_light = OmniLight3D.new()
+	instruction_pumpkin_light.light_color = Color(1.0, 1.0, 0.8, 1.0)  # Pale yellow
+	instruction_pumpkin_light.light_energy = 2.0  # Moderate brightness
+	instruction_pumpkin_light.omni_range = 3.0  # Small range around the pumpkin
+	instruction_pumpkin_light.position = Vector3(0, 0, 0)  # Center of the pumpkin
+	spinning_pumpkin.add_child(instruction_pumpkin_light)
 	
 	# Setup skull model in viewport
 	var skull_scene_instance = skull_scene.instantiate()
